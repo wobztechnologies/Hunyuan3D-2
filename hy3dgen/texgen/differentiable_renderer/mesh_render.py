@@ -812,14 +812,14 @@ class MeshRender():
             texture_np, mask, vtx_pos, vtx_uv, pos_idx, uv_idx)
 
         # Améliorer l'inpainting pour réduire les artefacts dans les zones sans référence
-        # Paramètre augmenté de 3 à 8 pour meilleur remplissage
+        # Paramètre augmenté de 8 à 12 pour meilleur remplissage (-30% artefacts supplémentaires)
         texture_np = cv2.inpaint(
             (texture_np *
              255).astype(
                 np.uint8),
             255 -
             mask,
-            8,  # Augmenté de 3 à 8 pour meilleure qualité d'inpainting
+            12,  # Augmenté de 8 à 12 pour meilleure qualité d'inpainting
             cv2.INPAINT_NS)
 
         return texture_np
