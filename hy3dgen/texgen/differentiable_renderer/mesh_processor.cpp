@@ -59,7 +59,7 @@ py::array_t<uint8_t> mask,
         }
     }
 
-    int smooth_count = 2;
+    int smooth_count = 5;  // Augmenté de 2 à 5 pour meilleur lissage et réduction des artefacts
     int last_uncolored_vtx_count = 0;
     while (smooth_count>0) {
         int uncolored_vtx_count = 0;

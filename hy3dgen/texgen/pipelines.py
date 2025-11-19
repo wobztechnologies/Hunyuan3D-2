@@ -104,7 +104,13 @@ class Hunyuan3DPaintPipeline:
         # Load model
         self.models['delight_model'] = Light_Shadow_Remover(self.config)
         self.models['multiview_model'] = Multiview_Diffusion_Net(self.config)
-        # self.models['super_model'] = Image_Super_Net(self.config)
+        # Activer super_model pour améliorer la qualité des textures générées
+        try:
+            self.models['super_model'] = Image_Super_Net(self.config)
+            logger.info("Super model loaded successfully for texture enhancement")
+        except Exception as e:
+            logger.warning(f"Could not load super model: {e}. Continuing without it.")
+            self.models['super_model'] = None
 
     def enable_model_cpu_offload(self, gpu_id: Optional[int] = None, device: Union[torch.device, str] = "cuda"):
         self.models['delight_model'].pipeline.enable_model_cpu_offload(gpu_id=gpu_id, device=device)
@@ -234,7 +240,13 @@ class Hunyuan3DPaintPipeline:
         multiviews = self.models['multiview_model'](images_prompt, normal_maps + position_maps, camera_info, num_inference_steps=num_inference_steps)
 
         for i in range(len(multiviews)):
-            # multiviews[i] = self.models['super_model'](multiviews[i])
+            # Appliquer super_model si disponible pour améliorer la qualité des textures
+            if self.models.get('super_model') is not None:
+                try:
+                    multiviews[i] = self.models['super_model'](multiviews[i])
+                    logger.debug(f"Applied super model to multiview {i}")
+                except Exception as e:
+                    logger.warning(f"Error applying super model to multiview {i}: {e}")
             multiviews[i] = multiviews[i].resize(
                 (self.config.render_size, self.config.render_size))
 

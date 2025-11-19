@@ -36,7 +36,7 @@ def meshVerticeInpaint_smooth(texture, mask, vtx_pos, vtx_uv, pos_idx, uv_idx):
                 uncolored_vtxs.append(vtx_idx)
             G[pos_idx[i, k]].append(pos_idx[i, (k + 1) % 3])
 
-    smooth_count = 2
+    smooth_count = 5  # Augmenté de 2 à 5 pour meilleur lissage et réduction des artefacts
     last_uncolored_vtx_count = 0
     while smooth_count > 0:
         uncolored_vtx_count = 0
