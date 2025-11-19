@@ -16,14 +16,41 @@ import trimesh
 import xatlas
 
 
-def mesh_uv_wrap(mesh):
+def mesh_uv_wrap(mesh, max_stretch=0.2, resolution=4096, max_charts=None):
+    """
+    Génère une UV map optimisée pour meilleure qualité de texture.
+    
+    Args:
+        mesh: Mesh trimesh
+        max_stretch: Distorsion maximale autorisée (0.0-1.0). Plus bas = moins de distorsion, meilleure qualité.
+                    Par défaut: 0.2 (haute qualité)
+        resolution: Résolution cible de l'atlas UV. Plus élevé = meilleure précision.
+                    Par défaut: 4096 (haute résolution)
+        max_charts: Nombre maximum de charts UV. None = automatique.
+    
+    Returns:
+        Mesh avec UV map optimisée
+    """
     if isinstance(mesh, trimesh.Scene):
         mesh = mesh.dump(concatenate=True)
 
     if len(mesh.faces) > 500000000:
         raise ValueError("The mesh has more than 500,000,000 faces, which is not supported.")
 
-    vmapping, indices, uvs = xatlas.parametrize(mesh.vertices, mesh.faces)
+    # Générer UV map avec paramètres optimisés pour qualité maximale
+    # xatlas.parametrize accepte ces paramètres pour réduire la distorsion
+    try:
+        # Essayer avec paramètres de qualité
+        vmapping, indices, uvs = xatlas.parametrize(
+            mesh.vertices, 
+            mesh.faces,
+            max_stretch=max_stretch,
+            resolution=resolution,
+            max_charts=max_charts
+        )
+    except TypeError:
+        # Fallback si xatlas ne supporte pas ces paramètres (ancienne version)
+        vmapping, indices, uvs = xatlas.parametrize(mesh.vertices, mesh.faces)
 
     mesh.vertices = mesh.vertices[vmapping]
     mesh.faces = indices

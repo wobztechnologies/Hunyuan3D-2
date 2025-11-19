@@ -45,6 +45,9 @@ class Hunyuan3DTexGenConfig:
         self.texture_size = 2048
         self.bake_exp = 4
         self.merge_method = 'fast'
+        self.texture_inference_steps = 30  # Nombre de steps pour génération texture (configurable)
+        self.uv_max_stretch = 0.2  # Distorsion maximale UV (plus bas = meilleure qualité)
+        self.uv_resolution = 4096  # Résolution UV atlas (plus élevé = meilleure précision)
 
         self.pipe_dict = {'hunyuan3d-paint-v2-0': 'hunyuanpaint', 'hunyuan3d-paint-v2-0-turbo': 'hunyuanpaint-turbo'}
         self.pipe_name = self.pipe_dict[subfolder_name]
@@ -126,7 +129,11 @@ class Hunyuan3DPaintPipeline:
         return position_maps
 
     def bake_from_multiview(self, views, camera_elevs,
-                            camera_azims, view_weights, method='graphcut'):
+                            camera_azims, view_weights, method=None):
+        # Utiliser merge_method de la config si method n'est pas spécifié
+        if method is None:
+            method = self.config.merge_method
+        
         project_textures, project_weighted_cos_maps = [], []
         project_boundary_maps = []
         for view, camera_elev, camera_azim, weight in zip(
@@ -142,7 +149,7 @@ class Hunyuan3DPaintPipeline:
             texture, ori_trust_map = self.render.fast_bake_texture(
                 project_textures, project_weighted_cos_maps)
         else:
-            raise f'no method {method}'
+            raise ValueError(f'No method {method} implemented. Available methods: fast')
         return texture, ori_trust_map > 1E-8
 
     def texture_inpaint(self, texture, mask):
@@ -204,7 +211,10 @@ class Hunyuan3DPaintPipeline:
 
         images_prompt = [self.models['delight_model'](image_prompt) for image_prompt in images_prompt]
 
-        mesh = mesh_uv_wrap(mesh)
+        # Générer UV map avec paramètres optimisés de la config
+        uv_max_stretch = getattr(self.config, 'uv_max_stretch', 0.2)
+        uv_resolution = getattr(self.config, 'uv_resolution', 4096)
+        mesh = mesh_uv_wrap(mesh, max_stretch=uv_max_stretch, resolution=uv_resolution)
 
         self.render.load_mesh(mesh)
 
@@ -219,7 +229,9 @@ class Hunyuan3DPaintPipeline:
         camera_info = [(((azim // 30) + 9) % 12) // {-20: 1, 0: 1, 20: 1, -90: 3, 90: 3}[
             elev] + {-20: 0, 0: 12, 20: 24, -90: 36, 90: 40}[elev] for azim, elev in
                        zip(selected_camera_azims, selected_camera_elevs)]
-        multiviews = self.models['multiview_model'](images_prompt, normal_maps + position_maps, camera_info)
+        # Utiliser texture_inference_steps de la config si disponible
+        num_inference_steps = getattr(self.config, 'texture_inference_steps', 30)
+        multiviews = self.models['multiview_model'](images_prompt, normal_maps + position_maps, camera_info, num_inference_steps=num_inference_steps)
 
         for i in range(len(multiviews)):
             # multiviews[i] = self.models['super_model'](multiviews[i])
