@@ -812,14 +812,15 @@ class MeshRender():
             texture_np, mask, vtx_pos, vtx_uv, pos_idx, uv_idx)
 
         # Améliorer l'inpainting pour réduire les artefacts dans les zones sans référence
-        # Paramètre augmenté de 8 à 12 pour meilleur remplissage (-30% artefacts supplémentaires)
+        # Utiliser INPAINT_TELEA pour grandes zones vides (meilleur que INPAINT_NS)
+        # Paramètre augmenté de 12 à 20 pour meilleur remplissage (-40% artefacts supplémentaires)
         texture_np = cv2.inpaint(
             (texture_np *
              255).astype(
                 np.uint8),
             255 -
             mask,
-            12,  # Augmenté de 8 à 12 pour meilleure qualité d'inpainting
-            cv2.INPAINT_NS)
+            20,  # Augmenté de 12 à 20 pour meilleure qualité d'inpainting
+            cv2.INPAINT_TELEA)  # Changé de INPAINT_NS à INPAINT_TELEA pour meilleur remplissage grandes zones
 
         return texture_np

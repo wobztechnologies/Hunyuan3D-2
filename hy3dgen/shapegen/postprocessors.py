@@ -41,7 +41,7 @@ def reduce_face(mesh: pymeshlab.MeshSet, max_facenum: int = 200000):
     mesh.apply_filter(
         "meshing_decimation_quadric_edge_collapse",
         targetfacenum=max_facenum,
-        qualitythr=1.0,
+        qualitythr=0.8,  # Amélioré de 1.0 à 0.8 pour meilleure qualité de décimation (moins de facettes)
         preserveboundary=True,
         boundaryweight=3,
         preservenormal=True,
